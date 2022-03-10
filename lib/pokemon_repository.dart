@@ -3,25 +3,35 @@ import 'dart:convert';
 import 'package:flutter/widgets.dart';
 import 'pokemon.dart';
 import 'package:http/http.dart' as http;
+import 'package:hive/hive.dart';
 
 class PokemonRepo extends ChangeNotifier {
   Map<String, Pokemon> pokemons = {};
   Map<String, String> pokemonsName = {};
+  //вот локальная база данных вместо Map<String, Pokemon> pokemons = {};
+  var poke = Hive.box("pokemons");
 
   Future<Pokemon> getPokemonById(String id) async {
-    if (pokemons.containsKey(id))
-      return Future.delayed(Duration.zero, () => pokemons[id]!);
+    // if (pokemons.containsKey(id))
+    // return Future.delayed(Duration.zero, () => pokemons[id]!);
+    //теперь проверяем наличия JSON в локальной базе
+    if (poke.containsKey(id))
+      return _getPokemonFromStorage(id);
     else
       return this._downloadPokemonInfoById(id);
   }
-
-  getListOfPackemanName() => pokemons.keys;
+//появилась новая функция которая достает значение из локальной базы
+  Future<Pokemon> _getPokemonFromStorage(String id) {
+    return Future.delayed(Duration.zero, () => Pokemon.fromJson(jsonDecode(poke.get(id))));
+  }
 
   Future<Pokemon> _downloadPokemonInfoById(String id) async {
     var url = Uri.https('pokeapi.co', '/api/v2/pokemon/$id', {'q': '{https}'});
     Pokemon pokemon = Pokemon();
     var response = await http.get(url);
     if (response.statusCode == 200) {
+      //скачанный текст кладем в локальной базе
+      poke.put(id, response.body);
       pokemon = Pokemon.fromJson(jsonDecode(response.body));
       pokemons[pokemon.id.toString()] = pokemon;
     } else {
@@ -29,8 +39,4 @@ class PokemonRepo extends ChangeNotifier {
     }
     return Future.delayed(Duration.zero, () => pokemon);
   }
-
-
-
-
 }

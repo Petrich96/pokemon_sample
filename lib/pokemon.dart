@@ -150,6 +150,11 @@ class Abilities {
   bool? isHidden;
   int? slot;
 
+  @override
+  String toString() {
+    return ability!.name!;
+  }
+
   Abilities({this.ability, this.isHidden, this.slot});
 
   Abilities.fromJson(Map<String, dynamic> json) {
